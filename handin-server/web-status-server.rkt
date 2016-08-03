@@ -234,6 +234,7 @@
                     `(dl ,@(for*/list ([fields split-lines]
                                        [node `((dt ,(first fields)) (dd ,(second fields)))])
                              node))))))
+      (and (string? tutor-group) (> (string-length tutor-group) 0) `(p, tutor-group))
       `(p "Noch kein Termin zugewiesen.")))
 
 (module+ test
@@ -249,14 +250,13 @@ Ort:  Raum VB N3, Morgenstelle")
    '(dl (dt "Zeit") (dd "Dienstag, 08.00 Uhr") (dt "Ort") (dd "Raum VB N3, Morgenstelle")))
   (check-equal? (format-tutor-group-field 'null) `(p "Noch kein Termin zugewiesen."))
   (check-equal? (format-tutor-group-field "") `(p "Noch kein Termin zugewiesen."))
-  (check-equal? (format-tutor-group-field "Keins") `(p "Noch kein Termin zugewiesen.")))
+  (check-equal? (format-tutor-group-field "Gruppe 2") `(p "Gruppe 2")))
 
 ;; Display the status of one user and all handins.
 (define (all-status-page user)
   (define row (handin-table-row user))
   (define upload-suffixes (get-conf 'allow-web-upload))
-  (define user-data-alist (map cons (map car (get-conf 'user-fields)) (cdr (get-user-data user)))) ; XXX Should be centralized, and part of the userdb.
-  (define tutor-group (cdr (assoc "Tutoriumstermin" user-data-alist)))
+  (define tutor-group (get-user-field-data user 'Tutoriumstermin))
   (define formatted-tutor-group (format-tutor-group-field tutor-group))
   (let* ([next
           (send/suspend

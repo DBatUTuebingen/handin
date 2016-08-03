@@ -7,6 +7,16 @@
          "logger.rkt"
          "config.rkt")
 
+
+;; Access data of an user-field for a user.
+(provide get-user-field-data)
+(define (get-user-field-data user field)
+  (cdr (assoc
+        (if (symbol? field) (symbol->string field) field)
+        (map cons
+             (map car (get-conf 'user-fields))
+             (cdr (get-user-data user))))))
+
 ;; Access user data for a user.
 (provide get-user-data)
 (define (get-user-data user)
