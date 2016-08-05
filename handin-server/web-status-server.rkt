@@ -256,7 +256,7 @@ Ort:  Raum VB N3, Morgenstelle")
 (define (all-status-page user as-tutor)
   (define row (handin-table-row user))
   (define upload-suffixes (get-conf 'allow-web-upload))
-  (define tutor-group #f);(get-user-field-data user 'Tutoriumstermin))
+  (define tutor-group (get-user-field-data user 'Tutoriumstermin))
   (define formatted-tutor-group (format-tutor-group-field tutor-group))
   (let* ([next
           (send/suspend
