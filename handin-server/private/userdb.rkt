@@ -11,17 +11,19 @@
 ;; Access data of an user-field for a user.
 (provide get-user-field-data)
 (define (get-user-field-data user field)
-  (cdr (assoc
-        (if (symbol? field) (symbol->string field) field)
-        (map cons
-             (map car (get-conf 'user-fields))
-             (cdr (get-user-data user))))))
+  (cdr (or (assoc
+            (if (symbol? field) (symbol->string field) field)
+            (map cons
+                 (map car (get-conf 'user-fields))
+                 (cdr (get-user-data user))))
+           (error 'user-data "requested user-field does not exist: ~s" field))))
 
 ;; Access user data for a user.
 (provide get-user-data)
 (define (get-user-data user)
   (or (get-user-data/local user)
-      (get-user-data/discourse user)))
+      (get-user-data/discourse user)
+      (error 'user-data "could not access user-data for: ~s" user)))
 
 (provide canonicalize-username-case)
 (define (canonicalize-username-case username)
