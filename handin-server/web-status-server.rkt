@@ -197,7 +197,7 @@
       (values (handin-grade user hi) #f))))
 
 ;; Display the status of one user and one handin.
-(define (one-status-page user for-handin)
+(define (one-status-page user as-tutor for-handin)
   (define-values (grade grading-table)
     (handin-grade/details user for-handin))
   (let* ([next (send/suspend
@@ -209,7 +209,7 @@
                     `(p ,@(solution-link k for-handin))
                     `(p (a ([href ,(make-k k "allofthem")])
                            ,(format "Alle Abgaben für ~a" user))))))])
-    (handle-status-request user next null)))
+    (handle-status-request user as-tutor next null)))
 
 ;; Displays a row in a table of handins.
 (define (((handin-table-row user) k active? upload-suffixes) dir)
@@ -253,10 +253,10 @@ Ort:  Raum VB N3, Morgenstelle")
   (check-equal? (format-tutor-group-field "Gruppe 2") `(p "Gruppe 2")))
 
 ;; Display the status of one user and all handins.
-(define (all-status-page user)
+(define (all-status-page user as-tutor)
   (define row (handin-table-row user))
   (define upload-suffixes (get-conf 'allow-web-upload))
-  (define tutor-group (get-user-field-data user 'Tutoriumstermin))
+  (define tutor-group #f);(get-user-field-data user 'Tutoriumstermin))
   (define formatted-tutor-group (format-tutor-group-field tutor-group))
   (let* ([next
           (send/suspend
@@ -265,24 +265,24 @@ Ort:  Raum VB N3, Morgenstelle")
               (format "Alle Abgaben für ~a" user)
               `(h2 "Tutoriumstermin")
               formatted-tutor-group
-              `(h2 "Abgaben")
+              `(h2, (format "Alle Abgaben für ~a" user))
               `(table ([class "submissions"])
                  (thead (tr (th "Aufgabenblatt") (th "Abgegebene Dateien") (th "Punkte")))
                  (tbody ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
                            (map (row k #f #f) (get-conf 'inactive-dirs))))))))])
-    (handle-status-request user next upload-suffixes)))
+    (handle-status-request user as-tutor next upload-suffixes)))
 
 ;; Handle file uploading and downloading.
 ;;
 ;; This function cooperates with make-k above.
-(define (handle-status-request user next upload-suffixes)
+(define (handle-status-request user as-tutor next upload-suffixes)
   (let* ([mode (aget (request-bindings next) 'mode)]
          [tag (aget (request-bindings next) 'tag)])
     (cond
      [(string=? mode "download")
       (download user tag)]
      [(string=? mode "upload")
-      (upload user tag upload-suffixes)]
+      (upload user as-tutor tag upload-suffixes)]
      [else
       (error 'status "unknown mode: ~s" mode)])))
 
@@ -346,7 +346,7 @@ Ort:  Raum VB N3, Morgenstelle")
         (list data)))))
 
 ;; Handle uploading of files.
-(define (upload who tag suffixes)
+(define (upload user as-tutor tag suffixes)
   (define next
     (send/suspend
      (lambda (k)
@@ -382,26 +382,26 @@ Ort:  Raum VB N3, Morgenstelle")
                                                  (car suffixes))))]
                [hw-dir (build-path server-dir tag)]
                [fn (build-path hw-dir (file-name-from-path base-fn))])
-          (unless (check fn `(,who *) #t #f)
-            (error 'download "bad upload access for ~s: ~a" who fn))
+          (unless (check fn `(,user *) #t #f)
+            (error 'download "bad upload access for ~s: ~a" user fn))
           (make-directory* hw-dir)
           (with-output-to-file
               fn
               #:exists 'truncate/replace
               (lambda () (display (binding:file-content fb))))
-          (all-status-page who))
+          (all-status-page user as-tutor))
         (error "no file provided"))))
 
 ;; Dispatch directly after login.
-(define (status-page user for-handin)
-  (log-line "Status access: ~s" user)
-  (hook 'status-login `([username ,(string->symbol user)]))
+(define (status-page user as-tutor for-handin)
+  (log-line "Status access: ~s (as ~s)" user (or as-tutor user))
+  (hook 'status-login `([statuspage ,(string->symbol user)][username ,(string->symbol (or as-tutor user))]))
   (if for-handin
-    (one-status-page user for-handin)
-    (all-status-page user)))
+    (one-status-page user as-tutor for-handin)
+    (all-status-page user as-tutor)))
 
 ;; Display login.
-(define (login-page for-handin errmsg)
+(define (login-page for-student for-handin errmsg)
   (let* ([request
           (send/suspend
            (lambda (k)
@@ -430,7 +430,7 @@ Ort:  Raum VB N3, Morgenstelle")
          [user-data (get-user-data user)])
     (redirect/get)
     (define (error* fmt . args)
-      (login-page for-handin (apply format fmt args)))
+      (login-page for-student for-handin (apply format fmt args)))
     (define has-password? (make-has-password? error*))
     (cond [(and user-data
                 (string? passwd)
@@ -439,9 +439,11 @@ Ort:  Raum VB N3, Morgenstelle")
                  (md5 passwd)
                  (let ([master-pwd (get-conf 'master-password)]
                        [user-pwd (list (car user-data))])
-                   (if master-pwd (cons master-pwd user-pwd) user-pwd))))
-           (status-page user for-handin)]
-          [else (login-page for-handin "Benutzername oder Passwort falsch.")])))
+                   (if master-pwd (cons master-pwd user-pwd) user-pwd)))
+                (or (not for-student) 
+                    (member "Tutoren" (get-user-field-data user 'groups))))
+               (status-page (or for-student user) (and for-student user) for-handin)]
+          [else (login-page for-student for-handin "Benutzername, Passwort oder Zugangsberechtigung fehlerhaft.")])))
 
 ;; Set up session counter.
 (define web-counter
@@ -460,9 +462,10 @@ Ort:  Raum VB N3, Morgenstelle")
 
 ;; Entry point for one connection.
 (define (dispatcher request)
+  (define args (request-bindings request))
   (error-print-context-length default-context-length)
   (parameterize ([current-session (web-counter)])
-    (login-page (aget (request-bindings request) 'handin) #f)))
+    (login-page (aget args 'student) (aget args 'handin) #f)))
 
 ;; Entry point for the whole HTTPS server.
 (provide run)
