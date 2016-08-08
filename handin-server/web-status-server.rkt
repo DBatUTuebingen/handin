@@ -214,12 +214,14 @@
 
 ;; Displays a row in a table of handins.
 (define (((handin-table-row user as-tutor) k active? upload-suffixes) dir)
-  (let ([hi (assignment<->dir dir)])
+  (let* ([hi (assignment<->dir dir)]
+         [team (file-name-from-path (or (find-handin-entry hi user) "/"))])
     (define-values (grade details)
       (handin-grade/details user hi))
     `(tr ([class ,(if active? "active" "inactive")])
        (th ([scope "row"]) ,hi)
-       (td ,(handin-link k user as-tutor hi upload-suffixes)
+       (td ,(if (and team (not (string=? (path->string team) user))) (format "Team ~a:" team) "")
+           ,(handin-link k user as-tutor hi upload-suffixes)
            ,@(format-grading-table details))
        (td ,grade))))
 
@@ -268,7 +270,7 @@ Ort:  Raum VB N3, Morgenstelle")
               formatted-tutor-group
               `(h2, (format "Alle Abgaben für ~a (~a)" (get-user-field-data user 'name) user))
               `(table ([class "submissions"])
-                 (thead (tr (th "Aufgabenblatt") (th "Abgegebene Dateien") (th "Punkte")))
+                 (thead (tr (th "Aufgabenblatt") (th "Abgegebene Dateien / Korrektur") (th "Punkte")))
                  (tbody ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
                            (map (row k #f #f) (get-conf 'inactive-dirs))))))))])
     (handle-status-request user as-tutor next upload-suffixes)))
