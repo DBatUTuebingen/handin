@@ -109,7 +109,7 @@
 
 ;; Display links to all files user handed in for hi
 ;; and/or links to upload such files now.
-(define (handin-link k user hi upload-suffixes)
+(define (handin-link k user as-tutor hi upload-suffixes)
   (let* ([dir (find-handin-entry hi user)]
          [l (if dir
                 (with-handlers ([exn:fail? (lambda (x) null)])
@@ -203,22 +203,23 @@
   (let* ([next (send/suspend
                 (lambda (k)
                   (make-page (format "Nutzer: ~a, Abgabe: ~a" user for-handin)
-                    `(p ,@(handin-link k user for-handin #f))
+                    `(h2, (format "Abgabe ~a für ~a (~a)" for-handin (get-user-field-data user 'name) user))
+                    `(p , (handin-link k user as-tutor for-handin #f))
                     `(p "Punkte: " ,grade)
                     `(p ,@(format-grading-table grading-table))
                     `(p ,@(solution-link k for-handin))
                     `(p (a ([href ,(make-k k "allofthem")])
-                           ,(format "Alle Abgaben für ~a" user))))))])
+                           ,(format "Alle Abgaben für ~a herunterladen" user))))))])
     (handle-status-request user as-tutor next null)))
 
 ;; Displays a row in a table of handins.
-(define (((handin-table-row user) k active? upload-suffixes) dir)
+(define (((handin-table-row user as-tutor) k active? upload-suffixes) dir)
   (let ([hi (assignment<->dir dir)])
     (define-values (grade details)
       (handin-grade/details user hi))
     `(tr ([class ,(if active? "active" "inactive")])
        (th ([scope "row"]) ,hi)
-       (td ,(handin-link k user hi upload-suffixes)
+       (td ,(handin-link k user as-tutor hi upload-suffixes)
            ,@(format-grading-table details))
        (td ,grade))))
 
@@ -254,8 +255,8 @@ Ort:  Raum VB N3, Morgenstelle")
 
 ;; Display the status of one user and all handins.
 (define (all-status-page user as-tutor)
-  (define row (handin-table-row user))
-  (define upload-suffixes (get-conf 'allow-web-upload))
+  (define row (handin-table-row user as-tutor))
+  (define upload-suffixes (get-conf (or (and as-tutor 'tutor-web-upload) 'allow-web-upload)))
   (define tutor-group (get-user-field-data user 'Tutoriumstermin))
   (define formatted-tutor-group (format-tutor-group-field tutor-group))
   (let* ([next
@@ -265,7 +266,7 @@ Ort:  Raum VB N3, Morgenstelle")
               (format "Alle Abgaben für ~a" user)
               `(h2 "Tutoriumstermin")
               formatted-tutor-group
-              `(h2, (format "Alle Abgaben für ~a" user))
+              `(h2, (format "Alle Abgaben für ~a (~a)" (get-user-field-data user 'name) user))
               `(table ([class "submissions"])
                  (thead (tr (th "Aufgabenblatt") (th "Abgegebene Dateien") (th "Punkte")))
                  (tbody ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
@@ -352,6 +353,7 @@ Ort:  Raum VB N3, Morgenstelle")
      (lambda (k)
        (make-page
         "Handin Upload"
+        `(h2, (format "Upload für ~a" user))
         `(form ([action ,k] [method "post"] [enctype "multipart/form-data"])
                (table ([align "center"])
                       (tr (td "File:")
