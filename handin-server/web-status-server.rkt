@@ -272,7 +272,7 @@ Ort:  Raum VB N3, Morgenstelle")
               `(table ([class "submissions"])
                  (thead (tr (th "Aufgabenblatt") (th "Abgegebene Dateien / Korrektur") (th "Punkte")))
                  (tbody ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
-                           (map (row k #f #f) (get-conf 'inactive-dirs))))))))])
+                           (map (row k #f (and as-tutor upload-suffixes)) (get-conf 'inactive-dirs))))))))])
     (handle-status-request user as-tutor next upload-suffixes)))
 
 ;; Handle file uploading and downloading.
