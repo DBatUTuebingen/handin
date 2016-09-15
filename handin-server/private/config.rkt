@@ -90,6 +90,7 @@
     [(allow-new-users)         (values #f                    id           )]
     [(allow-change-info)       (values #f                    id           )]
     [(allow-web-upload)        (values #f                    maybe-strs   )]
+    [(allow-download)          (values #t                    id           )]
     [(master-password)         (values #f                    id           )]
     [(log-output)              (values #t                    id           )]
     [(log-file)                (values "log"                 path/false   )]
