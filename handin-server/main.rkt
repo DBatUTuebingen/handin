@@ -224,6 +224,8 @@
         (timeout-control 'reset)
         (log-line "checking ~a for ~a" assignment users)
         (let* ([checker* (path->complete-path (build-path 'up "checker.rkt"))]
+               [checker* (or (and (file-exists? checker*) checker*)
+                             (path->complete-path (build-path server-dir "checker.rkt")))]
                [checker* (and (file-exists? checker*)
                               (parameterize ([current-directory server-dir])
                                 (auto-reload-value
