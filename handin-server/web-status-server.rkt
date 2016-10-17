@@ -174,7 +174,7 @@
                              files)))))]
           [else none])))
 
-;; Load grade file for handin hi of user, or "--" by default.
+;; Load grade file for handin hi of user, or "" by default.
 (define (handin-grade user hi)
   (let* ([dir (find-handin-entry hi user)]
          [grade (and dir
@@ -183,7 +183,7 @@
                             (with-input-from-file filename
                               (lambda ()
                                 (read-string (file-size filename)))))))])
-    (or grade "--")))
+    (or grade "")))
 
 ;; Load sum of grades and detailed grades from grade.rktd file for handin hi of user
 ;; (falling back to grade file for the sum and #f for the details)
@@ -213,18 +213,25 @@
     (handle-status-request user as-tutor next null)))
 
 ;; Displays a row in a table of handins.
-(define (((handin-table-row user as-tutor) k active? upload-suffixes) dir)
+(define ((((handin-table-row user as-tutor) k active? upload-suffixes) lastinparentdir?) dir)
   (let* ([hi (assignment<->dir dir)]
          [team (file-name-from-path (or (find-handin-entry hi user) "/"))])
     (define-values (grade details)
       (handin-grade/details user hi))
-    `(tr ([class ,(if active? "active" "inactive")])
-       (th ([scope "row"]) ,hi)
+    `(tr ([class ,(string-append (if lastinparentdir? "last " "") (if active? "active" "inactive"))])
+       (th ([scope "row"]) ,hi) 
        (td ,(if (and team (not (string=? (path->string team) user))) (format "Team ~a:" team) "")
            ,(handin-link k user as-tutor hi upload-suffixes)
            ,@(format-grading-table details))
        (td ,grade))))
 
+;; Display one user-field and its description (third string element)
+(define ((user-field user) fs)
+  `(tr (th ,(list-ref fs 2))
+    (td ,(or (get-user-field-data user (list-ref fs 0)) "Keine Angabe"))))
+
+
+;; Display structured tutor group
 (define (format-tutor-group-field tutor-group)
   (or (with-handlers
           ([exn:fail? (lambda (exn) #f)])
@@ -258,21 +265,23 @@ Ort:  Raum VB N3, Morgenstelle")
 ;; Display the status of one user and all handins.
 (define (all-status-page user as-tutor)
   (define row (handin-table-row user as-tutor))
+  (define (parent dir) (path->string (second (reverse (explode-path dir)))))
+  (define (diffgroup v next) (or (empty? next) (eq? (parent v) (parent (cdr (first next))))))
+  (define (map-group f dir) (map (f #t) dir))
+  ;(define (map-group f dir) (map car (foldr (lambda (v l) (cons (cons (f (diffgroup v l)) v) l)) '() dir)))
   (define upload-suffixes (get-conf (or (and as-tutor 'tutor-web-upload) 'allow-web-upload)))
-  (define tutor-group (get-user-field-data user 'Tutoriumstermin))
-  (define formatted-tutor-group (format-tutor-group-field tutor-group))
+  (define labeled-extra-fields (filter (lambda (l) (list-ref l 2)) (get-conf 'extra-fields)))
   (let* ([next
           (send/suspend
            (lambda (k)
              (make-page
-              (format "Alle Abgaben für ~a" user)
-              `(h2 "Tutoriumstermin")
-              formatted-tutor-group
-              `(h2, (format "Alle Abgaben für ~a (~a)" (get-user-field-data user 'name) user))
+              (format "Handin Status für ~a" user)
+              `(table ([class "user-fields"]) (tbody ,@(map (user-field user) labeled-extra-fields)))
+              `(h2, "Abgaben und Feedback")
               `(table ([class "submissions"])
-                 (thead (tr (th "Aufgabenblatt") (th "Abgegebene Dateien / Korrektur") (th "Punkte")))
-                 (tbody ,@(append (map (row k #t upload-suffixes) (get-conf 'active-dirs))
-                           (map (row k #f (and as-tutor upload-suffixes)) (get-conf 'inactive-dirs))))))))])
+                 (thead (tr (th "Aufgabe") (th "Abgegebene Dateien / Korrektur") (th "Punkte")))
+                 (tbody ,@(append (map-group (row k #t upload-suffixes) (get-conf 'active-dirs))
+                           (map-group (row k #f (and as-tutor upload-suffixes)) (get-conf 'inactive-dirs))))))))])
     (handle-status-request user as-tutor next upload-suffixes)))
 
 ;; Handle file uploading and downloading.
