@@ -20,6 +20,7 @@
          handin-server/private/hooker
          handin-server/private/userdb
          handin-server/format-grade
+         racket/trace
          "run-servlet.rkt")
 
 ;; Looks up key in alist, returns #f if not found.
@@ -218,12 +219,12 @@
     (handle-status-request user as-tutor next null)))
 
 ;; Displays a row in a table of handins.
-(define ((((handin-table-row user as-tutor) k active? upload-suffixes) lastinparentdir?) dir)
+(define ((((handin-table-row user as-tutor) k active? upload-suffixes) firstinparentdir?) dir)
   (let* ([hi (assignment<->dir dir)]
          [team (file-name-from-path (or (find-handin-entry hi user) "/"))])
     (define-values (grade details)
       (handin-grade/details user hi))
-    `(tr ([class ,(string-append (if lastinparentdir? "last " "") (if active? "active" "inactive"))])
+    `(tr ([class ,(string-append (if firstinparentdir? "first " "") (if active? "active" "inactive"))])
        (th ([scope "row"]) ,hi) 
        (td ,(if (and team (not (string=? (path->string team) user))) (format "Team ~a:" team) "")
            ,(handin-link k user as-tutor hi upload-suffixes)
@@ -270,9 +271,12 @@ Ort:  Raum VB N3, Morgenstelle")
 ;; Display the status of one user and all handins.
 (define (all-status-page user as-tutor)
   (define row (handin-table-row user as-tutor))
-  (define (parent dir) (path->string (second (reverse (explode-path dir)))))
-  (define (diffgroup v next) (or (empty? next) (eq? (parent v) (parent (cdr (first next))))))
-  (define (map-group f dir) (map (f #t) dir))
+  (define (parent-dir dir) (and dir (path->string (second (reverse (explode-path dir))))))
+  (define (eq?? a b) (equal? a b))
+  (define (same-parent? dirs) (eq?? (parent-dir (car dirs)) (parent-dir (cadr dirs))))
+  (define (zipped dir) (map list dir (append (list-tail dir 1) (list #f))))
+  (define (map-group f dir) (map (lambda (dirs) ((f (same-parent? dirs)) (car dirs))) (zipped dir)))
+  ;(define (map-group f dir) (map (f #t) dir))
   ;(define (map-group f dir) (map car (foldr (lambda (v l) (cons (cons (f (diffgroup v l)) v) l)) '() dir)))
   (define upload-suffixes (get-conf (or (and as-tutor 'tutor-web-upload) 'allow-web-upload)))
   (define labeled-extra-fields (filter (lambda (l) (list-ref l 2)) (get-conf 'extra-fields)))
