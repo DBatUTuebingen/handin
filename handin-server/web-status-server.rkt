@@ -395,7 +395,7 @@ Ort:  Raum VB N3, Morgenstelle")
                                                  (car suffixes))))]
                [hw-dir (build-path server-dir tag)]
                [fn (build-path hw-dir (file-name-from-path base-fn))])
-          (unless (check fn `(,user *) #t #f)
+          (unless (check fn `(,user *) #t as-tutor)
             (error 'download "bad upload access for ~s: ~a" user fn))
           (make-directory* hw-dir)
           (with-output-to-file
