@@ -174,7 +174,7 @@
                              files)))))]
           [else none])))
 
-;; Load grade file for handin hi of user, or "" by default.
+;; Load "grade" file for handin hi of user, or "" by default.
 (define (handin-grade user hi)
   (let* ([dir (find-handin-entry hi user)]
          [grade (and dir
@@ -185,16 +185,21 @@
                                 (read-string (file-size filename)))))))])
     (or grade "")))
 
-;; Load sum of grades and detailed grades from grade.rktd file for handin hi of user
-;; (falling back to grade file for the sum and #f for the details)
+;; Load sum of grades and detailed grades from "grade.rktd" file for handin hi of user
 ; Returns: String (Or FinishedGradingTable #f)
 (define (handin-grade/details user hi)
   (let* ([dir (find-handin-entry hi user)]
          [grading-table (and dir
                      (read-grading-table (build-path dir "grade.rktd")))])
-    (if (finished-grading-table? grading-table)
-      (values (number->string (grading-table-total grading-table)) grading-table)
-      (values (handin-grade user hi) #f))))
+    (cond
+      ;; show finished grading table and sum
+      [(finished-grading-table? grading-table)
+        (values (number->string (grading-table-total grading-table)) grading-table)]
+      ;; grading table existent, but not valid
+      [(and dir (file-exists? (build-path dir "grade.rktd")))
+        (values "Korrektur fehlerhaft, bitte wende dich an deinen Tutor!" "?")]
+      ;; falling back to "grade" file for the sum and #f for the details
+      [else (values (handin-grade user hi) #f)])))
 
 ;; Display the status of one user and one handin.
 (define (one-status-page user as-tutor for-handin)
