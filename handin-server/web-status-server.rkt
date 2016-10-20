@@ -227,7 +227,7 @@
     `(tr ([class ,(string-append (if firstinparentdir? "lastrow " "") (if active? "active" "inactive"))])
        (th ([scope "row"]) ,hi) 
        (td ,(if (and team (not (string=? (path->string team) user))) (format "Team ~a:" team) "")
-           ,(if (xor active? as-tutor) (handin-link k user as-tutor hi upload-suffixes) "")
+           ,(handin-link k user as-tutor hi (and (xor active? as-tutor) upload-suffixes))
            ,@(format-grading-table details))
        (td ,grade))))
 
