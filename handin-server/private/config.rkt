@@ -81,6 +81,7 @@
     [(hook-file)               (values #f                    path/false   )]
     [(session-timeout)         (values 300                   id           )]
     [(session-memory-limit)    (values 40000000              id           )]
+    [(sessions-memory-threshold) (values (* 12 1024 1024)    id           )]
     [(default-file-name)       (values "handin.rkt"          id           )]
     [(max-upload)              (values 500000                id           )]
     [(max-upload-keep)         (values 9                     id           )]
