@@ -2,7 +2,8 @@
 
 (require racket/list
          racket/function
-         racket/bool)
+         racket/bool
+         markdown)
 (provide (all-defined-out))
 
 ;; A GradingTable is the result of reading a `grade.rktd`-like file.
@@ -80,7 +81,7 @@
        ,@(for/list
                    ([entry (in-list entries)]
                     #:when (string? (first entry)))
-                    `(tr (td ,(number->string (second entry))) (td ,(first entry))))))
+                    `(tr (td ,(number->string (second entry))) (td ,@(parse-markdown (first entry)))))))
     `()))
 
 ; FinishedGradingTable -> Grade
