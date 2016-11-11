@@ -149,9 +149,9 @@
                         null))])
     (if (pair? handins)
         `(ul ,@handins)
-        (if (and (not as-tutor) (empty upload-suffixes))
-          "Keine einsehbaren Abgaben."
-          "Noch keine akzeptierte Abgabe eingereicht."))))
+        `(p, (if (and (not as-tutor) (empty upload-suffixes))
+            "Keine einsehbaren Abgaben."
+            "Noch keine akzeptierte Abgabe eingereicht.")))))
 
 ;; ???
 (define (solution-link k hi)
