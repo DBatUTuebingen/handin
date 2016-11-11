@@ -149,7 +149,7 @@
                         null))])
     (if (pair? handins)
         `(ul ,@handins)
-        `(p, (if (and (not as-tutor) (empty upload-suffixes))
+        `(p, (if (and (not as-tutor) (empty? upload-suffixes))
             "Keine einsehbaren Abgaben."
             "Noch keine akzeptierte Abgabe eingereicht.")))))
 
