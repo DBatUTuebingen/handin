@@ -25,7 +25,7 @@
          ;; they're being required dynamically), and further handlers
          ;; will fail with "queue-callback: eventspace is shutdown",
          ;; requiring it here makes it avoids killing the eventspace
-         ;racket/gui/base ;(disabled to run server without X installed)
+         racket/gui/base
          )
 
 (install-logger-port)
