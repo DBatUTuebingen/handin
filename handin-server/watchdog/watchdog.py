@@ -8,7 +8,6 @@ import json
 import urllib2
 import time
 import threading
-from slacker import Slacker
 
 '''
     Watchdog dropping a notification to Slack once the handin server is 
