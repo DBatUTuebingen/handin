@@ -121,11 +121,13 @@
 ;; Because usernames are also looked up in the DB produced by
 ;; get-user-data/discourse, and because get-user-data/discourse uses canonicalize-username-case,
 ;; we end up implementing correctly both settings of 'username-case-sensitive in config.rktd.
+;; Check if user is active, too.
 (define (has-password/discourse? username password)
-  (hash-ref (discourse-req "/admin/course/auth.json"
-                           #:post-data (alist->form-urlencoded `((user . ,username)
-                                                                 (password . ,password))))
-            'success))
+  (and (hash-ref (discourse-req "/admin/course/auth.json"
+                                #:post-data (alist->form-urlencoded `((user . ,username)
+                                                                      (password . ,password))))
+                 'success)
+       (get-user-field-data username 'active)))
 
 (define crypt
   (let ([c #f] [sema (make-semaphore 1)])
