@@ -236,7 +236,7 @@
 ;; Display one user-field and its description (third string element)
 (define ((user-field user) fs)
   `(tr (th ,(list-ref fs 2))
-    (td ,(or (get-user-field-data user (list-ref fs 0)) "Keine Angabe"))))
+    (td ,(format "~a"(or (get-user-field-data user (list-ref fs 0)) "Keine Angabe")))))
 
 
 ;; Display structured tutor group
