@@ -224,6 +224,8 @@
         (timeout-control 'reset)
         (log-line "checking ~a for ~a" assignment users)
         (let* ([checker* (path->complete-path (build-path 'up "checker.rkt"))]
+               [checker* (or (and (file-exists? checker*) checker*)
+                             (path->complete-path (build-path server-dir "checker.rkt")))]
                [checker* (and (file-exists? checker*)
                               (parameterize ([current-directory server-dir])
                                 (auto-reload-value
@@ -512,7 +514,9 @@
        (case msg
          [(change-user-info) (change-user-info data)]
          [(save-submission) (accept-specific-submission data r r-safe w)]
-         [(get-submission) (retrieve-specific-submission data w)]
+         [(get-submission) (if (get-conf 'allow-download) 
+                               (retrieve-specific-submission data w)
+                               (perror "submission download not allowed"))]
          [(get-user-info) (write+flush w (get-user-info data)) (loop)]
          [else (perror "bad message `~a'" msg)])]))
   (write+flush w 'ok)) ; final confirmation for *all* actions

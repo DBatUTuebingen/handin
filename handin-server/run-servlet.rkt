@@ -1,5 +1,7 @@
 #lang racket/base
 
+(require "private/config.rkt")
+
 (define default-context-length (error-print-context-length))
 
 ;; This code has parts that are copied from `serve/servlet' in
@@ -101,7 +103,7 @@
          #:regexp #rx""
          #:manager (make-threshold-LRU-manager
                     (send-error "Your session has expired" init-path)
-                    (* 12 1024 1024))))
+                    (get-conf 'sessions-memory-threshold))))
       ;; This can be used to serve html content too; doesn't make sense now,
       ;; since the servlet will be used for all requests, and it never calls
       ;; (next-dispatcher).  (See "servlet-env.rkt" for the needed `require's.)
