@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/file
+         racket/list
          json
          net/http-client
          net/uri-codec
@@ -84,7 +85,7 @@
 (define (to-ruby-boolean bool)
   (if bool "true" "false"))
 
-;; fetch user database of discourse
+;; fetch user database of discourse (FIXME would be better to use API calls for specific user instead of user db dump)
 (define get-user-data/discourse
   (let* ([fetch-data
           (lambda ()
@@ -102,7 +103,10 @@
                   (hash))))]
          [data (cached 2000.0 fetch-data)])
     (lambda (username)
-      (hash-ref (data) username #f))))
+      ; do not fetch user data if 'extra-fields' is empty (note: existence check is not checked in this case)
+      (if (empty? (get-conf 'extra-fields))
+          (list (list 'discourse username))
+          (hash-ref (data) username #f)))))
 
 ;; authenticate username/password with discourse
 ;; Discourse itself is case-insensitive.
