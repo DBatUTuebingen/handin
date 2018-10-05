@@ -4,15 +4,19 @@ Instructors use this infrastructure to generate a separate,
 course-specific ".plt" file (or package) that students install.
 
 To install this fork of the `handin` package, use URL
-`git://github.com/ps-tuebingen/handin.git`, either through the "Install
+`git://github.com/DBatUTuebingen/handin`, either through the "Install
 Package..." menu item in DrRacket's "File" menu, or via
 
-    raco pkg install git://github.com/ps-tuebingen/handin.git
+    raco pkg install git://github.com/DBatUTuebingen/handin.git
 
 ## Running the Handin Server
 
 For instructions, after installing, see the "Handin Server" documentation that
 is added to the Racket documentation.
+
+To run the server on a headless system install packages `xvfb`, `libjpeg8` and `libgtk2.0-0` and start the server from within the config directory using:
+
+    xvfb-run -a racket -l handin-server
 
 ## Branching
 
