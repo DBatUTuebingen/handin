@@ -6,13 +6,16 @@
          net/http-client
          net/uri-codec
          "logger.rkt"
-         "config.rkt")
+         "config.rkt"
+         db)
 
 ;; Access user data for a user.
 (provide get-user-data)
 (define (get-user-data user)
   (or (get-user-data/local user)
-      (get-user-data/discourse user)))
+      (if (get-conf 'postgres-userdb)
+          (get-user-data/postgres user)
+          (get-user-data/discourse user))))
 
 (provide canonicalize-username-case)
 (define (canonicalize-username-case username)
@@ -103,10 +106,7 @@
                   (hash))))]
          [data (cached 2000.0 fetch-data)])
     (lambda (username)
-      ; do not fetch user data if 'extra-fields' is empty (note: existence check is not checked in this case)
-      (if (empty? (get-conf 'extra-fields))
-          (list (list 'discourse username))
-          (hash-ref (data) username #f)))))
+      (hash-ref (data) username #f))))
 
 ;; authenticate username/password with discourse
 ;; Discourse itself is case-insensitive.
@@ -150,3 +150,12 @@
           [else (bad-password "bad password value in user database")]))
   (or (member md5 passwords) ; very cheap search first
       (ormap good? passwords)))
+
+; use PostgreSQL database table 'handin.users (username, ... extra-fields ...)' as userdb
+(define get-user-data/postgres
+  (lambda (username)
+    (let* ([pgc (postgresql-connect #:socket (get-conf 'postgres-socket);'guess ; or (postgresql-guess-socket-path)
+                                    #:user (get-conf 'postgres-user)
+                                    #:database (get-conf 'postgres-userdb))]
+           [data (query-maybe-row pgc "select * from handin.users WHERE username = $1" username)])
+      (and data (cons (list 'discourse (vector-ref data 0)) (drop (vector->list data) 1))))))
