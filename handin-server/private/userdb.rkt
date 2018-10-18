@@ -156,6 +156,7 @@
   (lambda (username)
     (let* ([pgc (postgresql-connect #:socket (get-conf 'postgres-socket);'guess ; or (postgresql-guess-socket-path)
                                     #:user (get-conf 'postgres-user)
-                                    #:database (get-conf 'postgres-userdb))]
+                                    #:database (get-conf 'postgres-userdb)
+                                    #:password (get-conf 'postgres-userdb))]
            [data (query-maybe-row pgc "select * from handin.users WHERE username = $1" username)])
       (and data (cons (list 'discourse (vector-ref data 0)) (drop (vector->list data) 1))))))
