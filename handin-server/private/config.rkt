@@ -97,6 +97,7 @@
     [(log-file)                (values "log"                 path/false   )]
     [(web-log-file)            (values #f                    path/false   )]
     [(discourse-config-file)   (values #f                    path/false   )]
+    [(postgres-userdb)         (values #f                    id           )]
     [(extra-fields)
      (values '(("Full Name" #f #f)
                ("ID#" #f #f)
