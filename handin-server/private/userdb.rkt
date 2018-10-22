@@ -158,5 +158,8 @@
                                     #:user (get-conf 'postgres-user)
                                     #:database (get-conf 'postgres-userdb)
                                     #:password (get-conf 'postgres-password))]
-           [data (query-maybe-row pgc "select * from handin.users WHERE username = $1" username)])
+           [query (if (get-conf 'username-case-sensitive)
+                      "select * from handin.users WHERE username = $1"
+                      "select * from handin.users WHERE lower(username) = lower($1)")]
+           [data (query-maybe-row pgc query username)])
       (and data (cons (list 'discourse (vector-ref data 0)) (drop (vector->list data) 1))))))
